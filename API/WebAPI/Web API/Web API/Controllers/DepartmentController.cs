@@ -41,7 +41,7 @@ namespace Web_API.Controllers
             {
                 string query = @"
                     insert into dbo.Department values
-                    ('"+dep.DepartmentName+ @"')
+                    ('"+ dep.DepartmentName + @"')
                     ";
 
                 DataTable table = new DataTable();
