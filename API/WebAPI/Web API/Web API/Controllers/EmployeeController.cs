@@ -6,6 +6,7 @@ using System.Data.SqlClient;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
+using System.Web;
 using System.Web.Http;
 using Web_API.Models;
 
@@ -17,7 +18,10 @@ namespace Web_API.Controllers
         {
             //Find out how I can create stored procedures for these SQL queries.
             string query = @"
-                    select EmployeeId,EmployeeName,Department,DateOfJoining,PhotoFileName from
+                    select EmployeeId,EmployeeName,Department,
+                    convert(varchar(10),DateOfJoining,120) as DateOfJoining,
+                    PhotoFileName
+                    from
                     dbo.Employee
                     ";
 
@@ -41,7 +45,12 @@ namespace Web_API.Controllers
             {
                 string query = @"
                     insert into dbo.Employee values
-                    ('" + emp.EmployeeName + @"')
+                    (
+                    '" + emp.EmployeeName + @"',
+                    '" + emp.Department + @"',
+                    '" + emp.DateOfJoining + @"',
+                    '" + emp.PhotoFileName + @"'
+                    )
                     ";
 
                 DataTable table = new DataTable();
@@ -68,8 +77,11 @@ namespace Web_API.Controllers
             try
             {
                 string query = @"
-                    update dbo.Employee set EmployeeName=
-                    '" + emp.EmployeeName + @"'
+                    update dbo.Employee set 
+                    EmployeeName='" + emp.EmployeeName + @"',
+                    Department='" + emp.Department + @"',
+                    DateOfJoining='" + emp.DateOfJoining + @"',
+                    PhotoFileName='" + emp.PhotoFileName + @"'
                     where EmployeeId=" + emp.EmployeeId + @"
                     ";
 
@@ -117,6 +129,48 @@ namespace Web_API.Controllers
             {
 
                 return "Failed to Delete!";
+            }
+        }
+
+        [Route("api/Employee/GetAllDepartmentNames")]
+        [HttpGet]
+        public HttpResponseMessage GetAllDepartmentNames()
+        {
+            string query = @"select DepartmentName from dbo.Department";
+
+            DataTable table = new DataTable();
+            using (var con = new SqlConnection(ConfigurationManager.
+            ConnectionStrings["EmployeeAppDB"].ConnectionString))
+            using (var cmd = new SqlCommand(query, con))
+            using (var da = new SqlDataAdapter(cmd))
+            {
+                cmd.CommandType = CommandType.Text;
+                da.Fill(table);
+            }
+
+            return Request.CreateResponse(HttpStatusCode.OK, table);
+        }
+
+        [Route("api/Employee/SaveFile")]
+        public string SaveFile()
+        {
+            try
+            {
+                var httpRequest = HttpContext.Current.Request;
+                var postedFile = httpRequest.Files[0];
+                string filename = postedFile.FileName;
+                
+                //physicalPath specifies the directory of where to save the image file at.
+                var physicalPath = HttpContext.Current.Server.MapPath("~/Photos/" + filename);
+
+                postedFile.SaveAs(physicalPath);
+
+                return filename;
+            }
+            catch (Exception)
+            {
+
+                return "anonymous.png";
             }
         }
     }
